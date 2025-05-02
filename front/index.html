@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Importar Excel</title>
+  <style>
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    table, th, td {
+      border: 1px solid black;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Importar Excel</h1>
+  <form id="upload-form" enctype="multipart/form-data">
+    <input type="file" id="excel-file" name="file" />
+    <button type="submit">Subir</button>
+  </form>
+
+  <div id="resultado"></div>
+  <div id="tabla-container"></div>
+
+  <script>
+    document.getElementById('upload-form').addEventListener('submit', async function (event) {
+      event.preventDefault();
+  
+      const formData = new FormData();
+      const fileInput = document.getElementById('excel-file');
+      if (!fileInput.files.length) {
+        alert("Seleccioná un archivo.");
+        return;
+      }
+  
+      formData.append('file', fileInput.files[0]);
+  
+      const tablaContainer = document.getElementById('tabla-container');
+      tablaContainer.innerHTML = "Procesando...";
+  
+      try {
+        const res = await fetch('http://localhost:3000/importar-excel', {
+          method: 'POST',
+          body: formData
+        });
+  
+        if (!res.ok) throw new Error("Error al subir el archivo");
+  
+        const data = await res.json();
+  
+        if (!data || data.length === 0) {
+          tablaContainer.innerHTML = "No se encontraron productos.";
+          return;
+        }
+  
+        let html = `
+          <table>
+            <thead>
+              <tr>
+                <th>Imagen</th>
+                <th>Precio Anterior</th>
+                <th>Descuento</th>
+                <th>Precio Actual</th>
+                <th>Envío</th>
+                <th>Link</th>
+              </tr>
+            </thead>
+            <tbody>
+        `;
+  
+        data.forEach(item => {
+          html += `
+            <tr>
+              <td><img src="${item.imagen}" alt="producto" style="width: 50px; height: 50px;"></td>
+              <td>${item.pvpantes || '-'}</td>
+              <td>${item.porcentajedescuento || '-'}</td>
+              <td>${item.pvpactual || '-'}</td>
+              <td>${item.envio || '-'}</td>
+              <td><a href="${item.linkproducto}" target="_blank">Ver producto</a></td>
+            </tr>
+          `;
+        });
+  
+        html += '</tbody></table>';
+        tablaContainer.innerHTML = html;
+  
+      } catch (err) {
+        console.error(err);
+        tablaContainer.innerHTML = "Error: " + err.message;
+      }
+    });
+  </script>
+  
+</body>
+</html>
