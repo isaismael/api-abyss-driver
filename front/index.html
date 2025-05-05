@@ -155,7 +155,7 @@
           <div class="spinner-border" role="status">
             <span class="visually-hidden">Loading...</span>
           </div>
-          <p class="mb-0 ms-3">Procesando archivo...</p>
+          <p class="mb-0 ms-3">Comenzando scraping...</p>
         </div>
       `;
 
@@ -191,6 +191,7 @@ let html = `
         <th>Precio Actual</th>
         <th>Descuento</th>
         <th>Dif.PVP $</th>
+        <th>Cuotas</th>
         <th>Envío</th>
         <th>Link</th>
       </tr>
@@ -221,14 +222,15 @@ data.forEach((item, index) => {
       <tr>
         <td>${nombre}</td>
         <td>${idFab}</td>
-        <td>${costoActual}</td>
+        <td>$${costoActual}</td>
         <td>${utilidad}</td>
         <td>$${pvpExcel}</td>
         <td><img src="${item.imagen || '#'}" alt="producto" onerror="this.src='#';this.style.display='none'"></td>
         <td>$${item.pvpantes || '-'}</td>
-        <td>${item.pvpactual || '-'} %</td>
         <td>$${item.porcentajedescuento || '-'}</td>
+        <td>${item.pvpactual || '-'} %</td>
         <td>$${item.porcentajedescuento - pvpExcel || '-'}</td>
+        <td>${item.cuotas || '-'}</td>
         <td>${item.envio || '-'}</td>
         <td><a href="${item.linkproducto || '#'}" target="_blank">Ver producto</a></td>
       </tr>
