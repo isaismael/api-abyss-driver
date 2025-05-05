@@ -1,100 +1,250 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <title>Importar Excel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <style>
-    table {
-      width: 100%;
-      border-collapse: collapse;
+    body {
+      display: flex;
+      margin: 0;
     }
-    table, th, td {
-      border: 1px solid black;
+
+    .sidebar {
+      width: 250px;
+      background-color: #343a40;
+      color: white;
+      min-height: 100vh;
+      padding: 1rem;
+      position: fixed;
+      top: 0;
+      left: 0;
     }
-    th, td {
-      padding: 8px;
-      text-align: left;
+
+    .sidebar h3 {
+      color: white;
+      margin-bottom: 1.5rem;
+    }
+
+    .nav-link {
+      color: white;
+      padding: 10px;
+      display: block;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+
+    .nav-link:hover {
+      background-color: #495057;
+    }
+
+    .main-content {
+      margin-left: 250px;
+      /* Deja espacio para el sidebar */
+      padding: 2rem;
+      flex: 1;
+    }
+
+    img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+    }
+
+    .sellers-title {
+      font-weight: bold;
+      margin-top: 20px;
+    }
+
+    .sellers-selects {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .sellers-selects input[type="radio"] {
+      margin-right: 5px;
+    }
+
+    .table-container {
+      margin-top: 2rem;
     }
   </style>
 </head>
-<body>
-  <h1>Importar Excel</h1>
-  <form id="upload-form" enctype="multipart/form-data">
-    <input type="file" id="excel-file" name="file" />
-    <button type="submit">Subir</button>
-  </form>
 
-  <div id="resultado"></div>
-  <div id="tabla-container"></div>
+<body>
+
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <h3>Abyss Driver</h3>
+    <ul class="nav flex-column">
+      <li class="nav-item">
+        <a href="/" class="nav-link">🏠 Home</a>
+      </li>
+      <li class="nav-item">
+        <a href="/busqueda" class="nav-link">🔍 Web Scraping</a>
+      </li>
+      <li class="nav-item">
+        <a href="/registro" class="nav-link">👤 Registrar usuario</a>
+      </li>
+      <li class="nav-item">
+        <a href="/logout" class="nav-link">↩ Cerrar sesión</a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Contenido principal -->
+  <div class="main-content">
+    <div class="container">
+      <h1 class="text-center mb-4">🔍 Web Scraping</h1>
+
+      <!-- Formulario con fetch -->
+      <form id="upload-form" enctype="multipart/form-data" class="mb-4">
+        <div class="row">
+          <div class="col-md-6">
+            <label for="excel-file" class="form-label">Seleccioná un archivo Excel/CSV:</label>
+            <input type="file" class="form-control" id="excel-file" name="file"
+              accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+          </div>
+          <div class="col-md-6 d-flex align-items-end">
+            <button type="submit" class="btn btn-success w-100">Importar</button>
+          </div>
+        </div>
+
+        <div class="sellers">
+          <div class="sellers-title">Seleccioná los sellers a scrapear:</div>
+          <div class="sellers-selects mt-2">
+            <label><input type="radio" name="seller" value="mercadolibre"> Mercado Libre</label>
+            <label><input type="radio" name="seller" value="fravega"> Frávega</label>
+            <label><input type="radio" name="seller" value="oscarbarbieri"> Oscar Barbieri</label>
+            <label><input type="radio" name="seller" value="castillo"> Castillo</label>
+            <label><input type="radio" name="seller" value="oncity"> On City</label>
+          </div>
+        </div>
+      </form>
+
+      <div id="resultado"></div>
+      <div id="tabla-container" class="table-container"></div>
+    </div>
+  </div>
 
   <script>
     document.getElementById('upload-form').addEventListener('submit', async function (event) {
       event.preventDefault();
-  
-      const formData = new FormData();
+
       const fileInput = document.getElementById('excel-file');
       if (!fileInput.files.length) {
         alert("Seleccioná un archivo.");
         return;
       }
-  
+
+      const formData = new FormData();
       formData.append('file', fileInput.files[0]);
-  
+
+      const seller = document.querySelector('input[name="seller"]:checked');
+      if (seller) {
+        formData.append('seller', seller.value);
+      }
+
       const tablaContainer = document.getElementById('tabla-container');
-      tablaContainer.innerHTML = "Procesando...";
-  
+      tablaContainer.innerHTML = `
+        <div class="d-flex justify-content-center align-items-center">
+          <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+          <p class="mb-0 ms-3">Procesando archivo...</p>
+        </div>
+      `;
+
       try {
         const res = await fetch('http://localhost:3000/importar-excel', {
           method: 'POST',
           body: formData
         });
-  
+
         if (!res.ok) throw new Error("Error al subir el archivo");
-  
+
         const data = await res.json();
-  
+
         if (!data || data.length === 0) {
-          tablaContainer.innerHTML = "No se encontraron productos.";
+          tablaContainer.innerHTML = "<p class='text-danger'>No se encontraron productos.</p>";
           return;
         }
-  
-        let html = `
-          <table>
-            <thead>
-              <tr>
-                <th>Imagen</th>
-                <th>Precio Anterior</th>
-                <th>Descuento</th>
-                <th>Precio Actual</th>
-                <th>Envío</th>
-                <th>Link</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-  
-        data.forEach(item => {
-          html += `
-            <tr>
-              <td><img src="${item.imagen}" alt="producto" style="width: 50px; height: 50px;"></td>
-              <td>${item.pvpantes || '-'}</td>
-              <td>${item.porcentajedescuento || '-'}</td>
-              <td>${item.pvpactual || '-'}</td>
-              <td>${item.envio || '-'}</td>
-              <td><a href="${item.linkproducto}" target="_blank">Ver producto</a></td>
-            </tr>
-          `;
-        });
-  
-        html += '</tbody></table>';
+
+// Modifica la parte del script que genera la tabla en tu HTML:
+// Modificar la parte del script que genera la tabla:
+let html = `
+  <div class="table-responsive">
+  <table class="table table-bordered table-hover">
+    <thead class="table-dark">
+      <tr>
+        <th>Nombre Artículo</th>
+        <th>ID Fabricante</th>
+        <th>Costo Actual</th>
+        <th>Utilidad</th>
+        <th>PVP Yuhmak</th>
+        <th>Imagen</th>
+        <th>Precio Anterior</th>
+        <th>Precio Actual</th>
+        <th>Descuento</th>
+        <th>Dif.PVP $</th>
+        <th>Envío</th>
+        <th>Link</th>
+      </tr>
+    </thead>
+    <tbody>
+`;
+
+data.forEach((item, index) => {
+  const nombre = item.nombreArticulo || dataExcel[index]?.NOMBRES_DEL_ARTICULO || '-';
+  const idFab = item.idFabricante || dataExcel[index]?.ID_FRABRICANTE || '-';
+  const costoActual = item.costoActual || dataExcel[index]?.COSTO_ACTUAL || '-';
+  const utilidad = item.utilidad || dataExcel[index]?.Utilidad || '-';
+  const pvpExcel = item.pvpExcel || dataExcel[index]?.PVP || '-';
+
+  if (item.error) {
+    html += `
+      <tr class="table-warning">
+        <td>${nombre}</td>
+        <td>${idFab}</td>
+        <td>${costoActual}</td>
+        <td>${utilidad}</td>
+        <td>${pvpExcel}</td>
+        <td colspan="6" class="text-danger">${item.error}</td>
+      </tr>
+    `;
+  } else {
+    html += `
+      <tr>
+        <td>${nombre}</td>
+        <td>${idFab}</td>
+        <td>${costoActual}</td>
+        <td>${utilidad}</td>
+        <td>$${pvpExcel}</td>
+        <td><img src="${item.imagen || '#'}" alt="producto" onerror="this.src='#';this.style.display='none'"></td>
+        <td>$${item.pvpantes || '-'}</td>
+        <td>${item.pvpactual || '-'} %</td>
+        <td>$${item.porcentajedescuento || '-'}</td>
+        <td>$${item.porcentajedescuento - pvpExcel || '-'}</td>
+        <td>${item.envio || '-'}</td>
+        <td><a href="${item.linkproducto || '#'}" target="_blank">Ver producto</a></td>
+      </tr>
+    `;
+  }
+});
+
+        html += '</tbody></table></div>';
         tablaContainer.innerHTML = html;
-  
+
       } catch (err) {
         console.error(err);
-        tablaContainer.innerHTML = "Error: " + err.message;
+        tablaContainer.innerHTML = "<p class='text-danger'>Error: " + err.message + "</p>";
       }
     });
   </script>
-  
 </body>
+
 </html>
